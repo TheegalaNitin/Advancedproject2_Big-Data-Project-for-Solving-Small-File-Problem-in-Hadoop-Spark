@@ -3,6 +3,17 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+/*
+* Hadoop cannot use normal Java types (int, String)
+
+It uses special Writable types:
+
+Text → String
+
+IntWritable → int
+
+LongWritable → long
+*/
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -13,14 +24,36 @@ import java.io.IOException;
 
 
 public class TaxiIDCount {
+/*
+This is the driver class that:
+
+Defines Mapper
+
+Defines Reducer
+
+Configures and runs the job
+*/
 
     public static class TokenizerMapper extends Mapper<LongWritable, Text, Text, IntWritable>{
         private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
+/*one → reused constant value 1
+
+word → reused object to store Taxi ID
+
+(Reuse improves performance)*/
 
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String[] itr = value.toString().split(",");
+/*
+Convert line to string
+
+Split CSV by comma
+*/
             if(itr.length > 1) {
+/*
+Safety check: ensures line is valid
+*/
                 word.set(itr[0]);
                 context.write(word, one);
             }
@@ -48,6 +81,7 @@ public class TaxiIDCount {
             System.exit(2);
         }
         Job job = Job.getInstance(conf, "taxi id count");
+/*Defines a MapReduce job named “taxi id count”*/
         job.setJarByClass(TaxiIDCount.class);
         job.setMapperClass(TokenizerMapper.class);
         job.setCombinerClass(IntSumReducer.class);
@@ -60,5 +94,11 @@ public class TaxiIDCount {
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
+/*
+Submits job
+
+Waits for completion
+
+Returns success or failure code*/
     }
 }
